@@ -5,21 +5,34 @@ const sleep = (n = 1000) => {
     setTimeout(() => resolve(), n);
   });
 };
-const main = async () => {
+
+/**
+ *
+ * @param {string} url url of rebook
+ */
+const book = async (url) => {
   const browser = await puppeteer.launch({
     headless: false,
+    ignoreDefaultArgs: ["--disable-extensions"],
   });
   const page = await browser.newPage();
 
-  await page.goto(
-    "https://www.ch-edoc-reservation.admin.ch/#/session?token=TPWHQjnK&locale=en-US",
-    {
-      waitUntil: "networkidle0",
-    }
-  );
+  await page.goto(url, {
+    waitUntil: "networkidle0",
+  });
 
   await page.setViewport({ width: 1728, height: 911 });
 
+  const currentDateCell = await page.waitForSelector(
+    "#content > app-appointment-detail > section:nth-child(2) > div > ul > li:nth-child(6) > span:nth-child(2)",
+    { visible: true }
+  );
+  const currentDateString = await currentDateCell.evaluate(
+    (el) => el.textContent
+  );
+  const curMonth = currentDateString.split(".")[2];
+  const curDate = currentDateString.split(".")[1];
+  console.log({ curMonth, curDate });
   await page.waitForSelector("#rebookBtn", { visible: true });
   await page.click("#rebookBtn");
   await sleep();
@@ -29,7 +42,8 @@ const main = async () => {
   await sleep();
 
   const firstRowEL = await page.waitForSelector(
-    "#content > app-booking-search > app-proposal-table > div > table > tbody > tr > td.mat-cell.cdk-cell.cdk-column-proposalDate.mat-column-proposalDate.ng-star-inserted"
+    "#content > app-booking-search > app-proposal-table > div > table > tbody > tr > td.mat-cell.cdk-cell.cdk-column-proposalDate.mat-column-proposalDate.ng-star-inserted",
+    { visible: true }
   );
   const cellText = await firstRowEL.evaluate((el) => {
     const text = el.textContent;
@@ -37,22 +51,32 @@ const main = async () => {
   });
   if (cellText) {
     const month = cellText.split(".")[2];
-    console.info(`找到date了 ${cellText}`);
-    if (month < 6) {
-      console.info(`找到小于6月的date了 ${cellText}`);
+    const date = cellText.split(".")[1];
+    console.info(`找到date了 ${cellText} ${new Date().toLocaleTimeString()}`);
+    if (month < curMonth || (month === curMonth && date < curDate)) {
+      console.info(
+        `找到小于${curMonth}月${curDate}号的date了 ${cellText} ${new Date().toLocaleTimeString()}`
+      );
       await page.click(
         ".ng-star-inserted > .mat-table > tbody > .mat-row:nth-child(1) > .cdk-column-proposalDate"
       );
 
       await page.waitForSelector("#rebookBtn", { visible: true });
       await page.click("#rebookBtn");
-      console.info(`成功rebook ${cellText}`);
+      console.info(`成功rebook ${cellText} ${new Date().toLocaleTimeString()}`);
       await browser.close();
     }
   } else {
-    console.info(`没有找到任何date`);
+    console.info(`没有找到任何date at ${new Date().toLocaleTimeString()}`);
   }
   await browser.close();
+};
+
+const main = async () => {
+  const urls = ["url1", "url2"];
+  for (const url of urls) {
+    await book(url);
+  }
 };
 
 main();
