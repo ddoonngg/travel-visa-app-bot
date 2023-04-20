@@ -52,10 +52,10 @@ const book = async (url) => {
   if (cellText) {
     const month = cellText.split(".")[2];
     const date = cellText.split(".")[1];
-    console.info(`找到date了 ${cellText} ${new Date().toLocaleTimeString()}`);
+    console.info(`Found date: ${cellText} at ${new Date().toLocaleTimeString()}`);
     if (month < curMonth || (month === curMonth && date < curDate)) {
       console.info(
-        `找到小于${curMonth}月${curDate}号的date了 ${cellText} ${new Date().toLocaleTimeString()}`
+        `Found ${curMonth}/${curDate} ${cellText} at ${new Date().toLocaleTimeString()}`
       );
       await page.click(
         ".ng-star-inserted > .mat-table > tbody > .mat-row:nth-child(1) > .cdk-column-proposalDate"
@@ -63,11 +63,11 @@ const book = async (url) => {
 
       await page.waitForSelector("#rebookBtn", { visible: true });
       await page.click("#rebookBtn");
-      console.info(`成功rebook ${cellText} ${new Date().toLocaleTimeString()}`);
+      console.info(`Rebook ${cellText} ${new Date().toLocaleTimeString()}`);
       await browser.close();
     }
   } else {
-    console.info(`没有找到任何date at ${new Date().toLocaleTimeString()}`);
+    console.info(`No date found at ${new Date().toLocaleTimeString()}`);
   }
   await browser.close();
 };
